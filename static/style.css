@@ -1,0 +1,176 @@
+body.dark {
+    background: black;
+    color: #00ff9f;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+}
+
+.container {
+    margin-top: 50px;
+}
+
+.glow {
+    text-shadow: 0 0 10px #00ff9f, 0 0 20px #00ff9f;
+}
+
+input {
+    display: block;
+    margin: 15px auto;
+    padding: 12px;
+    width: 250px;
+    background: black;
+    border: 1px solid #00ff9f;
+    color: #00ff9f;
+    border-radius: 8px;
+}
+
+button {
+    padding: 12px 20px;
+    background: #00ff9f;
+    border: none;
+    color: black;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 10px;
+}
+
+button:hover {
+    box-shadow: 0 0 15px #00ff9f;
+}
+
+.link {
+    color: #00ff9f;
+    display: block;
+    margin-top: 20px;
+}
+
+#camera-box {
+    margin-top: 20px;
+}
+
+#camera video {
+    width: 250px;
+    border: 2px solid #00ff9f;
+    border-radius: 10px;
+}
+
+#preview {
+    width: 150px;
+    margin-top: 10px;
+}
+
+.success {
+    color: lime;
+    font-size: 20px;
+}
+
+.card {
+    border: 1px solid #00ff9f;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 10px;
+}
+
+/* 🔥 Hacker Scan Animation */
+.scan-line {
+    width: 100%;
+    height: 2px;
+    background: #00ff9f;
+    animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(200px); }
+}
+
+/* GRID */
+.grid {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+/* CARD DESIGN */
+.card {
+    background: rgba(0,0,0,0.7);
+    border: 1px solid #00ff9f;
+    padding: 20px;
+    width: 200px;
+    border-radius: 15px;
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px #00ff9f;
+}
+/* OVERLAY */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none;
+}
+
+/* SCANNER BOX */
+.scanner {
+    width: 250px;
+    height: 300px;
+    border: 2px solid #00ff9f;
+    position: relative;
+    box-shadow: 0 0 20px #00ff9f;
+}
+
+/* SCAN LINE */
+.scan-line {
+    position: absolute;
+    width: 100%;
+    height: 3px;
+    background: #00ff9f;
+    animation: scan 2s infinite;
+}
+
+@keyframes scan {
+    0% { top: 0; }
+    100% { top: 100%; }
+}
+
+/* TEXT */
+.scanner p {
+    color: #00ff9f;
+    text-align: center;
+    margin-top: 320px;
+    font-family: monospace;
+}
+
+/* PULSE ANIMATION */
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 5px #00ff9f; }
+    50% { box-shadow: 0 0 20px #00ff9f; }
+    100% { box-shadow: 0 0 5px #00ff9f; }
+}
+
+/* MATRIX BACKGROUND */
+#matrix {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}

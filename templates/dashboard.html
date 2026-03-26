@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="dark">
+
+<canvas id="matrix"></canvas>
+
+<div class="container">
+    <h1 class="glow">💻 Welcome {{user}}</h1>
+    <p class="success">✔ Login Successful</p>
+
+    <div class="grid">
+        <div class="card pulse">
+            <h2>🔑 Password</h2>
+            <p>Verified ✅</p>
+        </div>
+
+        <div class="card pulse">
+            <h2>👤 Face ID</h2>
+            <p>Matched ✅</p>
+        </div>
+
+        <div class="card pulse">
+            <h2>🛡 Security</h2>
+            <p>High 🔥</p>
+        </div>
+    </div>
+
+    <a href="/logout" class="link">🚪 Logout</a>
+</div>
+
+<script>
+// matrix animation
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+
+canvas.height = window.innerHeight;
+canvas.width = window.innerWidth;
+
+let letters = "01SECURE";
+letters = letters.split("");
+
+let fontSize = 14;
+let columns = canvas.width / fontSize;
+
+let drops = Array(Math.floor(columns)).fill(1);
+
+function draw() {
+    ctx.fillStyle = "rgba(0,0,0,0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#00ff9f";
+    ctx.font = fontSize + "px monospace";
+
+    drops.forEach((y, i) => {
+        let text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, y * fontSize);
+
+        if (y * fontSize > canvas.height && Math.random() > 0.975)
+            drops[i] = 0;
+
+        drops[i]++;
+    });
+}
+
+setInterval(draw, 33);
+</script>
+
+</body>
+</html>
