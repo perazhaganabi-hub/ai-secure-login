@@ -38,15 +38,28 @@ def register():
     password = request.form["password"]
 
     conn = sqlite3.connect("db.db")
-    try:
-        conn.execute("INSERT INTO users VALUES (?,?)", (username, password))
-        conn.commit()
-    except:
+    cursor = conn.cursor()
+
+    # check user already exists
+    user = cursor.execute(
+        "SELECT * FROM users WHERE username=?",
+        (username,)
+    ).fetchone()
+
+    if user:
+        conn.close()
         return "⚠️ Username already exists!"
 
+    # insert user
+    cursor.execute(
+        "INSERT INTO users (username, password) VALUES (?, ?)",
+        (username, password)
+    )
+    conn.commit()
     conn.close()
-    return redirect("/login")
 
+    # 🔥 DIRECT REDIRECT (NO MESSAGE)
+    return redirect("/login")
 # 📸 SAVE FACE
 @app.route("/capture", methods=["POST"])
 def capture():
