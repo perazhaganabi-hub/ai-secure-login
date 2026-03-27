@@ -1,37 +1,147 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>AI Secure Login</title>
+
+    <style>
+        body {
+            background: black;
+            color: #00ffcc;
+            font-family: monospace;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,255,0,0.05) 0px,
+                rgba(0,255,0,0.05) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            animation: moveBg 5s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes moveBg {
+            from { transform: translateY(0); }
+            to { transform: translateY(100px); }
+        }
+
+        .container {
+            margin-top: 60px;
+        }
+
+        input {
+            display: block;
+            margin: 10px auto;
+            padding: 12px;
+            width: 260px;
+            background: black;
+            border: 1px solid #00ffcc;
+            color: #00ffcc;
+        }
+
+        input:focus {
+            box-shadow: 0 0 10px #00ffcc;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            background: transparent;
+            border: 1px solid #00ffcc;
+            color: #00ffcc;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #00ffcc;
+            color: black;
+            box-shadow: 0 0 15px #00ffcc;
+        }
+
+        video {
+            width: 280px;
+            border: 2px solid #00ffcc;
+            box-shadow: 0 0 20px #00ffcc;
+            margin-top: 15px;
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 280px;
+            height: 2px;
+            background: red;
+            animation: scan 2s infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        #scanOverlay {
+            display: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,255,0,0.1);
+            z-index: 999;
+        }
+
+        #msg {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
 </head>
-<body class="dark">
+
+<body>
+
+<div id="scanOverlay"></div>
 
 <div class="container">
-    <h1 class="glow">🔐 Secure Login</h1>
 
-    <form id="loginForm" method="POST" action="/login">
-        <input type="text" name="username" id="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
+<h2 id="title"></h2>
 
-        <!-- hidden camera -->
-        <video id="video" autoplay style="display:none;"></video>
-        <canvas id="canvas" style="display:none;"></canvas>
+<input type="text" id="username" placeholder="Username">
+<input type="password" id="password" placeholder="Password">
 
-        <input type="hidden" name="image" id="imageData">
+<div style="position:relative; display:inline-block;">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="scan-line"></div>
+</div>
 
-        <button type="button" onclick="autoCaptureAndLogin()">🚀 Login</button>
-    </form>
+<canvas id="canvas" style="display:none;"></canvas>
 
-    <a href="/" class="link">Create account</a>
+<br>
+<button onclick="startCamera()">🎥 Start Camera</button>
+<button onclick="login()">🚀 Login</button>
+
+<p id="msg"></p>
+
 </div>
 
 <script src="/static/script.js"></script>
+
+<script>
+let text = "🔐 AI SECURE LOGIN";
+let i = 0;
+function type() {
+    if (i < text.length) {
+        document.getElementById("title").innerHTML += text.charAt(i);
+        i++;
+        setTimeout(type, 70);
+    }
+}
+type();
+</script>
+
 </body>
-<!-- FACE SCAN OVERLAY -->
-<div id="scanOverlay" class="overlay hidden">
-    <div class="scanner">
-        <div class="scan-line"></div>
-        <p>🔍 Scanning Face...</p>
-    </div>
-</div>
 </html>

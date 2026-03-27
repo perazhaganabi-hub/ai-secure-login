@@ -1,200 +1,249 @@
-// =======================
-// 🎥 GLOBAL VIDEO (REGISTER)
-// =======================
-let video = document.createElement("video");
-video.autoplay = true;
+// ===============================
+// 🎥 GLOBAL ELEMENTS
+// ===============================
+let video, canvas, msg;
+let stream = null;
 
-// =======================
-// 🎥 START CAMERA (REGISTER PAGE)
-// =======================
-function startCamera() {
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-            video.srcObject = stream;
+// ===============================
+// ✅ LOAD AFTER DOM READY
+// ===============================
+window.onload = () => {
+    video = document.getElementById("video");
+    canvas = document.getElementById("canvas");
+    msg = document.getElementById("msg");
 
-            let camDiv = document.getElementById("camera");
-            camDiv.innerHTML = "";
-            camDiv.appendChild(video);
-        })
-        .catch(() => alert("Camera access denied ❌"));
+    if (!video || !canvas || !msg) {
+        console.error("❌ UI elements missing");
+    } else {
+        console.log("✅ UI Ready");
+    }
+};
+
+// ===============================
+// 🎥 START CAMERA
+// ===============================
+async function startCamera() {
+    try {
+        if (!video) {
+            alert("Video not ready");
+            return;
+        }
+
+        if (stream) return;
+
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user" },
+            audio: false
+        });
+
+        video.srcObject = stream;
+
+        await new Promise(resolve => {
+            video.onloadedmetadata = () => resolve();
+        });
+
+        console.log("🎥 Camera started");
+
+    } catch (err) {
+        console.error("Camera error:", err);
+        alert("⚠️ Camera access denied / not available");
+    }
 }
 
-// =======================
-// 📸 CAPTURE FACE (REGISTER)
-// =======================
-function captureFace() {
-    let username = document.getElementById("username").value;
-
-    if (!username) {
-        alert("Enter username first ⚠️");
-        return;
+// ===============================
+// 📸 CAPTURE IMAGE
+// ===============================
+function captureImage() {
+    if (!video || video.videoWidth === 0) {
+        console.log("❌ Video not ready");
+        return null;
     }
 
-    if (!video.srcObject) {
-        alert("Start camera first 🎥");
-        return;
-    }
+    const ctx = canvas.getContext("2d");
 
-    let canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    let ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    let image = canvas.toDataURL("image/jpeg");
-
-    fetch("/capture", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            username: username,
-            image: image
-        })
-    })
-    .then(res => res.text())
-    .then(data => {
-        alert(data);
-
-        // stop camera
-        video.srcObject.getTracks().forEach(track => track.stop());
-    })
-    .catch(() => alert("Capture failed ❌"));
+    return canvas.toDataURL("image/jpeg", 0.9);
 }
 
-// =======================
-// 🔐 LOGIN BACKGROUND SCAN + AI RESPONSE
-// =======================
-function autoCaptureAndLogin() {
-    const username = document.getElementById("username").value;
-    const password = document.querySelector("input[name='password']").value;
-
-    if (!username || !password) {
-        alert("Enter username & password ⚠️");
-        return;
-    }
-
-    // 🔥 SHOW SCAN OVERLAY
-    document.getElementById("scanOverlay").classList.remove("hidden");
-
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-
-            let videoHidden = document.getElementById("video");
-            videoHidden.srcObject = stream;
-
-            setTimeout(() => {
-                let canvas = document.getElementById("canvas");
-
-                canvas.width = videoHidden.videoWidth;
-                canvas.height = videoHidden.videoHeight;
-
-                let ctx = canvas.getContext("2d");
-                ctx.drawImage(videoHidden, 0, 0);
-
-                let image = canvas.toDataURL("image/jpeg");
-
-                // 🔥 SEND TO BACKEND
-                fetch("/login", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded"
-                    },
-                    body: `username=${username}&password=${password}&image=${encodeURIComponent(image)}`
-                })
-                .then(res => res.text())
-                .then(data => {
-
-                    // stop camera
-                    stream.getTracks().forEach(track => track.stop());
-
-                    // =======================
-                    // 🤖 SMART RESPONSE
-                    // =======================
-                    if (data === "SUCCESS") {
-                        speak("Access Granted");
-                        setTimeout(() => {
-                            window.location.href = "/dashboard";
-                        }, 1500);
-                    }
-
-                    else if (data === "NO_FACE") {
-                        speak("Face not detected");
-                        alert("❌ Face not detected");
-                        hideOverlay();
-                    }
-
-                    else if (data === "FAIL") {
-                        speak("Access Denied");
-                        alert("❌ Face not matched");
-                        hideOverlay();
-                    }
-
-                    else if (data === "INVALID") {
-                        speak("Invalid credentials");
-                        alert("❌ Wrong username or password");
-                        hideOverlay();
-                    }
-
-                    else {
-                        alert("⚠️ Unknown error");
-                        hideOverlay();
-                    }
-
-                });
-
-            }, 1500); // wait camera ready
-        })
-        .catch(() => {
-            alert("Camera access denied ❌");
-            hideOverlay();
-        });
-}
-
-// =======================
-// 🎤 VOICE FUNCTION
-// =======================
+// ===============================
+// 🔊 VOICE
+// ===============================
 function speak(text) {
-    let speech = new SpeechSynthesisUtterance(text);
+    const speech = new SpeechSynthesisUtterance(text);
     speech.rate = 1;
     speech.pitch = 1;
-    speech.volume = 1;
     window.speechSynthesis.speak(speech);
 }
 
-// =======================
-// ❌ HIDE OVERLAY
-// =======================
-function hideOverlay() {
-    document.getElementById("scanOverlay").classList.add("hidden");
+// ===============================
+// 🔍 SCAN OVERLAY
+// ===============================
+function showScan() {
+    let overlay = document.getElementById("scanOverlay");
+    if (overlay) overlay.style.display = "block";
 }
 
-// =======================
-// ✨ INPUT GLOW EFFECT
-// =======================
-document.querySelectorAll("input").forEach(input => {
-    input.addEventListener("focus", () => {
-        input.style.boxShadow = "0 0 10px #00ff9f";
-    });
-
-    input.addEventListener("blur", () => {
-        input.style.boxShadow = "none";
-    });
-});
-
-// =======================
-// 🌙 DARK MODE TOGGLE
-// =======================
-function toggleMode() {
-    document.body.classList.toggle("dark");
+function hideScan() {
+    let overlay = document.getElementById("scanOverlay");
+    if (overlay) overlay.style.display = "none";
 }
 
-// =======================
-// 🔄 BUTTON LOADING (OPTIONAL)
-// =======================
-function showLoading(btn) {
-    btn.innerText = "Processing...";
-    btn.disabled = true;
+// ===============================
+// 📸 CAPTURE FACE (REGISTER)
+// ===============================
+async function captureFace() {
+    const username = document.getElementById("username").value.trim();
+
+    if (!username) {
+        alert("Enter username first");
+        return;
+    }
+
+    await startCamera();
+
+    setTimeout(async () => {
+
+        try {
+            const image = captureImage();
+
+            if (!image) {
+                msg.innerText = "⚠️ Camera not ready";
+                msg.style.color = "orange";
+                return;
+            }
+
+            const res = await fetch("/capture", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: username,
+                    image: image
+                })
+            });
+
+            const data = await res.text();
+
+            console.log("CAPTURE:", data);
+
+            msg.innerText = "✅ Face captured";
+            msg.style.color = "lime";
+
+        } catch (err) {
+            console.error(err);
+            msg.innerText = "❌ Capture failed";
+            msg.style.color = "red";
+        }
+
+    }, 1000);
+}
+
+// ===============================
+// 🔐 LOGIN FUNCTION
+// ===============================
+async function login() {
+    if (!video || !canvas || !msg) {
+        alert("UI not ready ❌");
+        return;
+    }
+
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    if (!username || !password) {
+        msg.innerText = "⚠️ Enter username & password";
+        msg.style.color = "orange";
+        return;
+    }
+
+    await startCamera();
+
+    showScan();
+
+    setTimeout(async () => {
+
+        try {
+            const image = captureImage();
+
+            if (!image) {
+                hideScan();
+                msg.innerText = "⚠️ Camera not ready";
+                msg.style.color = "orange";
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("username", username);
+            formData.append("password", password);
+            formData.append("image", image);
+
+            const res = await fetch("/login", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.text();
+
+            console.log("SERVER RESPONSE:", data);
+
+            hideScan();
+
+            if (data === "SUCCESS") {
+                msg.innerText = "✅ Access Granted";
+                msg.style.color = "lime";
+                speak("Access Granted");
+
+                setTimeout(() => {
+                    window.location.href = "/dashboard";
+                }, 1200);
+            }
+
+            else if (data === "FAIL") {
+                msg.innerText = "❌ Face mismatch";
+                msg.style.color = "red";
+                speak("Access denied");
+            }
+
+            else if (data === "NO_FACE") {
+                msg.innerText = "⚠️ Face not detected";
+                msg.style.color = "orange";
+                speak("Face not detected");
+            }
+
+            else if (data === "INVALID") {
+                msg.innerText = "❌ Invalid username/password";
+                msg.style.color = "red";
+                speak("Invalid login");
+            }
+
+            else {
+                msg.innerText = "⚠️ Server error";
+                msg.style.color = "yellow";
+                speak("System error");
+            }
+
+        } catch (err) {
+            console.error("❌ Fetch error:", err);
+            hideScan();
+            msg.innerText = "❌ Request failed";
+            msg.style.color = "red";
+        }
+
+    }, 1200);
+}
+
+// ===============================
+// ⛔ STOP CAMERA
+// ===============================
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+        console.log("Camera stopped");
+    }
 }
