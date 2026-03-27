@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = "secret123"
 
 # 📁 Create faces folder
 if not os.path.exists("faces"):
@@ -40,7 +40,6 @@ def register():
     conn = sqlite3.connect("db.db")
     cursor = conn.cursor()
 
-    # check user already exists
     user = cursor.execute(
         "SELECT * FROM users WHERE username=?",
         (username,)
@@ -50,7 +49,6 @@ def register():
         conn.close()
         return "⚠️ Username already exists!"
 
-    # insert user
     cursor.execute(
         "INSERT INTO users (username, password) VALUES (?, ?)",
         (username, password)
@@ -58,9 +56,9 @@ def register():
     conn.commit()
     conn.close()
 
-    # 🔥 DIRECT REDIRECT (NO MESSAGE)
     return redirect("/login")
-# 📸 SAVE FACE
+
+# 📸 CAPTURE FACE
 @app.route("/capture", methods=["POST"])
 def capture():
     data = request.json
@@ -78,91 +76,96 @@ def capture():
     return "Face Saved ✅"
 
 # 🔐 LOGIN PAGE
-@app.route("/login")
-def login_page():
-    return render_template("login.html")
-
-# 🔑 LOGIN (SMART RESPONSE)
 @app.route("/login", methods=["POST"])
 def login():
-    username = request.form.get("username")
-    password = request.form.get("password")
-    image_data = request.form.get("image")
-
-    # 🔒 Attempt limit
-    if "attempts" not in session:
-        session["attempts"] = 0
-
-    if session["attempts"] >= 3:
-        return "🚫 Too many attempts"
-
-    # 🔐 PASSWORD CHECK
-    conn = sqlite3.connect("db.db")
-    user = conn.execute(
-        "SELECT * FROM users WHERE username=? AND password=?",
-        (username, password)
-    ).fetchone()
-    conn.close()
-
-    if not user:
-        session["attempts"] += 1
-        return "INVALID"
-
-    # 🔐 FACE FILE CHECK
-    if not os.path.exists(f"faces/{username}.jpg"):
-        return "NO_FACE"
-
-    # 🔥 CHECK IMAGE FROM FRONTEND
-    if not image_data:
-        return "NO_FACE"
-
     try:
-        img_data = base64.b64decode(image_data.split(",")[1])
-        np_arr = np.frombuffer(img_data, np.uint8)
-        login_img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-    except:
-        return "NO_FACE"
+        username = request.form.get("username")
+        password = request.form.get("password")
+        image_data = request.form.get("image")
 
-    # 🔐 LOAD STORED FACE
-    stored_img = cv2.imread(f"faces/{username}.jpg")
+        if not username or not password:
+            return "INVALID"
 
-    gray_login = cv2.cvtColor(login_img, cv2.COLOR_BGR2GRAY)
-    gray_stored = cv2.cvtColor(stored_img, cv2.COLOR_BGR2GRAY)
+        if "attempts" not in session:
+            session["attempts"] = 0
 
-    # 🔍 FACE DETECTION
-    face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+        if session["attempts"] >= 3:
+            return "LOCKED"
 
-    faces1 = face_cascade.detectMultiScale(gray_stored, 1.3, 5)
-    faces2 = face_cascade.detectMultiScale(gray_login, 1.3, 5)
+        # 🔐 PASSWORD CHECK
+        conn = sqlite3.connect("db.db")
+        user = conn.execute(
+            "SELECT * FROM users WHERE username=? AND password=?",
+            (username, password)
+        ).fetchone()
+        conn.close()
 
-    if len(faces1) == 0 or len(faces2) == 0:
-        session["attempts"] += 1
-        return "NO_FACE"
+        if not user:
+            session["attempts"] += 1
+            return "INVALID"
 
-    # ✂️ CROP
-    (x, y, w, h) = faces1[0]
-    stored_face = gray_stored[y:y+h, x:x+w]
+        # 📂 FACE FILE CHECK
+        face_path = f"faces/{username}.jpg"
+        if not os.path.exists(face_path):
+            return "NO_FACE"
 
-    (x, y, w, h) = faces2[0]
-    login_face = gray_login[y:y+h, x:x+w]
+        if not image_data:
+            return "NO_FACE"
 
-    stored_face = cv2.resize(stored_face, (200, 200))
-    login_face = cv2.resize(login_face, (200, 200))
+        # 🧠 Decode login image
+        try:
+            img_data = base64.b64decode(image_data.split(",")[1])
+            np_arr = np.frombuffer(img_data, np.uint8)
+            login_img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        except:
+            return "NO_FACE"
 
-    # 🔬 COMPARE
-    diff = cv2.absdiff(stored_face, login_face)
-    score = np.mean(diff)
+        if login_img is None:
+            return "NO_FACE"
 
-    print("Face score:", score)
+        stored_img = cv2.imread(face_path)
+        if stored_img is None:
+            return "NO_FACE"
 
-    # 🔐 FINAL DECISION
-    if score < 50:
-        session["user"] = username
-        session["attempts"] = 0
-        return "SUCCESS"
-    else:
-        session["attempts"] += 1
-        return "FAIL"
+        gray_login = cv2.cvtColor(login_img, cv2.COLOR_BGR2GRAY)
+        gray_stored = cv2.cvtColor(stored_img, cv2.COLOR_BGR2GRAY)
+
+        face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+
+        faces1 = face_cascade.detectMultiScale(gray_stored, 1.3, 5)
+        faces2 = face_cascade.detectMultiScale(gray_login, 1.3, 5)
+
+        if len(faces1) == 0 or len(faces2) == 0:
+            session["attempts"] += 1
+            return "NO_FACE"
+
+        # ✂️ Crop
+        (x, y, w, h) = faces1[0]
+        stored_face = gray_stored[y:y+h, x:x+w]
+
+        (x, y, w, h) = faces2[0]
+        login_face = gray_login[y:y+h, x:x+w]
+
+        stored_face = cv2.resize(stored_face, (200, 200))
+        login_face = cv2.resize(login_face, (200, 200))
+
+        # 🔬 Compare
+        diff = cv2.absdiff(stored_face, login_face)
+        score = np.mean(diff)
+
+        print("Face score:", score)
+
+        if score < 30:
+            session["user"] = username
+            session["attempts"] = 0
+            return "SUCCESS"
+        else:
+            session["attempts"] += 1
+            return "FAIL"
+
+    except Exception as e:
+        print("ERROR:", e)
+        return "ERROR"
 
 # 🖥️ DASHBOARD
 @app.route("/dashboard")
@@ -177,6 +180,6 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# 🚀 RUN (DEPLOY READY)
+# 🚀 RUN
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
